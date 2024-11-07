@@ -20,9 +20,9 @@ import static util.JsonUtil.getValueFromPath;
 public class KafkaConsumerClient {
 
 
-    KafkaConsumer<String, String> consumer ;
-    public   KafkaConsumerClient( String bootstrapServers, String groupId)
-    {
+    KafkaConsumer<String, String> consumer;
+
+    public KafkaConsumerClient(String bootstrapServers, String groupId) {
 
 
         // create consumer configs
@@ -34,52 +34,43 @@ public class KafkaConsumerClient {
         properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
 
         // create consumer
-      consumer = new KafkaConsumer<>(properties);
+        consumer = new KafkaConsumer<>(properties);
     }
 
 
-    public List<ConsumerRecord> getNMessages(String topic, int n, boolean fromStart, List<TopicPartitionInfo> tpi,KafkaFilterOption options) throws ExecutionException, InterruptedException {
+    public List<ConsumerRecord> getNMessages(String topic, int n, boolean fromStart, List<TopicPartitionInfo> tpi, KafkaFilterOption options) throws ExecutionException, InterruptedException {
 
-
-
-        Map<Integer,Long> beginningOffset = getBeginningOffsets(topic,tpi);
-        Map<Integer,Long> endOffset = getEndOffsets(topic,tpi);
+        Map<Integer, Long> beginningOffset = getBeginningOffsets(topic, tpi);
+        Map<Integer, Long> endOffset = getEndOffsets(topic, tpi);
 
         long msgToRead = 0;
 
         consumer.unsubscribe();
 
-        consumer.assign(buildPartitionList(topic,tpi));
+        consumer.assign(buildPartitionList(topic, tpi));
         //find the offset to seek
-        for(int partition : beginningOffset.keySet())
-        {
-            long offset = 0 ;
-            if( (endOffset.get(partition) - beginningOffset.get(partition)) >=n)
-            {
-                offset = fromStart ? beginningOffset.get(partition) : endOffset.get(partition)-n;
-                msgToRead+=n;
-            }
-            else
-            {
+        for (int partition : beginningOffset.keySet()) {
+            long offset = 0;
+            if ((endOffset.get(partition) - beginningOffset.get(partition)) >= n) {
+                offset = fromStart ? beginningOffset.get(partition) : endOffset.get(partition) - n;
+                msgToRead += n;
+            } else {
                 offset = beginningOffset.get(partition);
-                msgToRead+= endOffset.get(partition)  - offset;
+                msgToRead += endOffset.get(partition) - offset;
             }
-            consumer.seek(new TopicPartition(topic,partition),offset);
+            consumer.seek(new TopicPartition(topic, partition), offset);
         }
 
         // TODO: 03-11-2024 logic needs to be changed
         long msgRead = 0;
-        List< ConsumerRecord> msgs = new ArrayList<>();
+        List<ConsumerRecord> msgs = new ArrayList<>();
         boolean flag = true;
-        while(msgToRead > 0 && flag)
-        {
-            ConsumerRecords<String ,String>  records = consumer.poll(Duration.ofSeconds(2));
-            for(ConsumerRecord record : records)
-            {
+        while (msgToRead > 0 && flag) {
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(2));
+            for (ConsumerRecord record : records) {
                 msgRead++;
-                filterMessage(record,msgs,options);
-                if (msgRead == msgToRead)
-                {
+                filterMessage(record, msgs, options);
+                if (msgRead == msgToRead) {
                     flag = false;
                     break;
                 }
@@ -89,74 +80,64 @@ public class KafkaConsumerClient {
         return msgs;
     }
 
-    private void filterMessage(ConsumerRecord msg ,  List< ConsumerRecord> msgs,KafkaFilterOption option)
-    {
-        if(option.isJsonFilter())
-        {
-           try{
-               JSONObject obj = new JSONObject(msg.value().toString());
-               boolean shouldAdd = true;
-               for(JsonFilter filter :option.getFilters())
-               {
-                   if(!getValueFromPath(obj,filter.getPath()).equals(filter.getValue()))
-                   {
-                       shouldAdd = false;
-                       break;
-                   }
-               }
-               if(shouldAdd) {msgs.add(msg);}
-           }
-           catch (Exception e)
-           {
-               System.err.println(e);
-           }
-        }
-        else
-        {
-            if(option.getSearchText().length() == 0 || msg.value().toString().toLowerCase().contains(option.getSearchText().toLowerCase()))
-            {
+    private void filterMessage(ConsumerRecord msg, List<ConsumerRecord> msgs, KafkaFilterOption option) {
+        if (option.getFilterType()==KafkaFilterOption.JSON_FILTER) {
+            try {
+                JSONObject obj = new JSONObject(msg.value().toString());
+                boolean shouldAdd = true;
+                for (JsonFilter filter : option.getJsonFilters()) {
+                    if (!getValueFromPath(obj, filter.getPath()).equalsIgnoreCase(filter.getValue())) {
+                        shouldAdd = false;
+                        break;
+                    }
+                }
+                if (shouldAdd) {
+                    msgs.add(msg);
+                }
+            } catch (Exception e) {
+                System.err.println(e);
+            }
+        } else {
+            if (option.getSearchText().length() == 0 || msg.value().toString().toLowerCase().contains(option.getSearchText().toLowerCase())) {
                 msgs.add(msg);
             }
         }
     }
 
     public Map<Integer, Long> getBeginningOffsets(String topic, List<TopicPartitionInfo> tpi) throws ExecutionException, InterruptedException {
-       List<TopicPartition> partitions = buildPartitionList(topic,tpi);
-       HashMap<Integer,Long> offsets = new HashMap<>();
-       Map<TopicPartition,Long> offs = consumer.beginningOffsets(partitions);
+        List<TopicPartition> partitions = buildPartitionList(topic, tpi);
+        HashMap<Integer, Long> offsets = new HashMap<>();
+        Map<TopicPartition, Long> offs = consumer.beginningOffsets(partitions);
         extractOffsetPerPartition(offs, offsets);
-        return  offsets;
+        return offsets;
     }
 
     private static void extractOffsetPerPartition(Map<TopicPartition, Long> offs, HashMap<Integer, Long> offsets) {
-        for(TopicPartition tp: offs.keySet())
-        {
-            offsets.put( tp.partition(), offs.get(tp));
+        for (TopicPartition tp : offs.keySet()) {
+            offsets.put(tp.partition(), offs.get(tp));
         }
     }
 
     public Map<Integer, Long> getEndOffsets(String topic, List<TopicPartitionInfo> tpi) throws ExecutionException, InterruptedException {
-        List<TopicPartition> partitions = buildPartitionList(topic,tpi);
-        HashMap<Integer,Long> offsets = new HashMap<>();
-        Map<TopicPartition,Long> offs = consumer.endOffsets(partitions);
+        List<TopicPartition> partitions = buildPartitionList(topic, tpi);
+        HashMap<Integer, Long> offsets = new HashMap<>();
+        Map<TopicPartition, Long> offs = consumer.endOffsets(partitions);
         extractOffsetPerPartition(offs, offsets);
-        return  offsets;
+        return offsets;
     }
 
 
-    private  List<TopicPartition> buildPartitionList(String topic, List<TopicPartitionInfo> partition) {
+    private List<TopicPartition> buildPartitionList(String topic, List<TopicPartitionInfo> partition) {
         List<TopicPartition> partitions = new ArrayList<>();
-        for(TopicPartitionInfo tpi: partition)
-        {
-            partitions.add(new TopicPartition(topic,tpi.partition()));
+        for (TopicPartitionInfo tpi : partition) {
+            partitions.add(new TopicPartition(topic, tpi.partition()));
         }
         return partitions;
     }
 
 
-    public Map<String, List<PartitionInfo>> getAllTopics()
-    {
-        Map<String, List<PartitionInfo>> list =  consumer.listTopics();
+    public Map<String, List<PartitionInfo>> getAllTopics() {
+        Map<String, List<PartitionInfo>> list = consumer.listTopics();
         return list;
     }
 }

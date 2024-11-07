@@ -1,6 +1,5 @@
 package com.kafkaui.UI
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,64 +16,59 @@ import androidx.compose.ui.unit.sp
 import com.kafkaui.ViewModel.KafkaViewModel
 
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun KafkaTopicsList(vm: KafkaViewModel) {
+fun KafkaTopicsListView(vm: KafkaViewModel) {
     var selectedIndex by remember { mutableStateOf(-1) }
-    Box(modifier = Modifier.width(200.dp).padding(10.dp).fillMaxHeight()) {
+    Box(modifier = Modifier.width(200.dp).fillMaxHeight()) {
         Column {
             Text(modifier = Modifier.padding(1.dp), fontSize = 18.sp, text = "Topics")
             if (vm.topicLoading.value) {
                 CircularProgressIndicator()
-            }
-            if(vm.connected.value==false)
-            {
+            } else if (!vm.connected.value) {
                 Text("Not Connected")
-            }
-            else if (vm.topicsListError.value !=null )
-            {
+            } else if (vm.topicsListError.value != null) {
                 Text("Error  : " + vm.topicsListError.value)
-            }else
-            {
-                
+            } else {
                 Card(
-                    modifier = Modifier.fillMaxHeight(),
+                    modifier = Modifier.fillMaxHeight().padding(top = 5.dp, bottom = 5.dp),
                     shape = RoundedCornerShape(5.dp)
-                ){
-                LazyColumn(
-                    userScrollEnabled = true,
                 ) {
-                    itemsIndexed(vm.data) { idndex, vali ->
-                        RowItem(vali, if (idndex == selectedIndex) Color.LightGray else Color.Transparent, onClick = {
-                            if(selectedIndex!=idndex) {
-                                selectedIndex = idndex
-                                vm.selectTopic(selectedIndex)
-                            }
+                    LazyColumn(
+                        userScrollEnabled = true,
+                    ) {
+                        itemsIndexed(vm.data) { index, value ->
+                            RowItem(
+                                value,
+                                if (index == selectedIndex) Color.LightGray else Color.Transparent,
+                                onClick = {
+                                    if (selectedIndex != index) {
+                                        selectedIndex = index
+                                        vm.selectTopic(selectedIndex)
+                                    }
+                                }
+                            )
                         }
-                        )
-                    }}
+                    }
                 }
-                }
+            }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 
 @Composable
 fun RowItem(text: String, selectedColor: Color, onClick: () -> Unit) {
-
-        Row(
-            Modifier.fillMaxWidth()
-                .background(color = selectedColor)
-                .clickable {
-                    onClick()
-                }) {
-            Text(
-                modifier = Modifier.padding(start = 5.dp),
-                text = text,
-                fontSize = 16.sp
-            )
-
+    Row(
+        Modifier.fillMaxWidth()
+            .background(color = selectedColor)
+            .clickable {
+                onClick()
+            }) {
+        Text(
+            maxLines = 1,
+            modifier = Modifier.padding(start = 5.dp, end = 5.dp),
+            text = text,
+            fontSize = 16.sp
+        )
     }
 }

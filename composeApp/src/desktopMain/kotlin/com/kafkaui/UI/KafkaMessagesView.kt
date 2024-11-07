@@ -3,26 +3,22 @@ package com.kafkaui.UI
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.Card
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kafkaui.Utils.beautifyJson
 import com.kafkaui.Utils.formatTimestamp
 import com.kafkaui.ViewModel.KafkaViewModel
 import com.seanproctor.datatable.DataColumn
 import com.seanproctor.datatable.TableColumnWidth
 import com.seanproctor.datatable.material3.PaginatedDataTable
 import com.seanproctor.datatable.paging.rememberPaginatedDataTableState
-import org.jetbrains.skia.paragraph.TextBox
 
 @Composable
 fun KafkaMessageView(vm: KafkaViewModel) {
@@ -104,9 +100,9 @@ fun KafkaMessageView(vm: KafkaViewModel) {
                         }
 
                             if (selectedRow != null && selectedRow!! < vm.msg.size) {
-                                messageView(vm.msg.get(selectedRow!!)?.value().toString(),Modifier.weight(1f))
+                                MessageView(vm.msg.get(selectedRow!!)?.value().toString(),Modifier.weight(1f))
                             } else {
-                                messageView("Select Msg",Modifier.weight(1f))
+                                MessageView("Select Msg",Modifier.weight(1f))
                             }
                         }
 
@@ -117,14 +113,21 @@ fun KafkaMessageView(vm: KafkaViewModel) {
 }
 
 @Composable
-fun messageView(txt : String,modifier: Modifier)
+fun MessageView(txt : String, modifier: Modifier)
 {
+    var beautifyJson by remember { mutableStateOf(true) }
     Card(modifier = modifier) {
         Column( )
         {
            Box(modifier = Modifier.height(26.dp).fillMaxWidth().background(Color.LightGray).padding(start = 5.dp))
            {
-               Text(fontSize = 16.sp, text ="Message",)
+             Row(modifier=Modifier.fillMaxWidth())
+             {
+                 Text(fontSize = 16.sp, text ="Message",)
+                 Spacer(Modifier.weight(1f))
+                 Text("Beautify JSON ")
+                 Switch(checked = beautifyJson, onCheckedChange = { beautifyJson=!beautifyJson})
+             }
            }
             Box(
                 modifier = Modifier.weight(1f)
@@ -133,8 +136,10 @@ fun messageView(txt : String,modifier: Modifier)
                 val stateVertical = rememberScrollState(0)
                 val stateHorizontal = rememberScrollState(0)
 
-                InputTextField(modifier = Modifier.fillMaxHeight().fillMaxWidth().verticalScroll(stateVertical).horizontalScroll(stateHorizontal),
-                    value = txt, onValueChange = {},
+                InputTextField(modifier = Modifier.fillMaxHeight().fillMaxWidth().verticalScroll(stateVertical).horizontalScroll(stateHorizontal)
+                    .background(Color.LightGray.copy(alpha = 0.1f)),
+                    value = if(beautifyJson) beautifyJson(txt) else  txt, onValueChange = {},
+                    shape = RectangleShape,
                     singleLine = false)
                 VerticalScrollbar(
                     modifier = Modifier.align(Alignment.CenterEnd)

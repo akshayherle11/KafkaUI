@@ -23,6 +23,10 @@ public class KafkaAdminClient {
     }
 
     public KafkaAdminClient connectClient() throws ConfigException {
+        if(adminClient !=null)
+        {
+            adminClient.close();
+        }
         adminClient = AdminClient.create(properties);
         return this;
     }
@@ -32,6 +36,7 @@ public class KafkaAdminClient {
         Set<String> topics = adminClient.listTopics().names().get(10, TimeUnit.SECONDS);
         List<String> topicsList = new ArrayList<>();
         topicsList.addAll(topics);
+        Collections.sort(topicsList);
         return topicsList;
     }
 

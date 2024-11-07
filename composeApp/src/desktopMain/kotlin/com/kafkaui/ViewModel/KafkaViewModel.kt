@@ -82,15 +82,21 @@ class KafkaViewModel: ViewModel() {
         msg.clear()
         withContext(Dispatchers.IO) {
             try {
-                msg.addAll(
-                    consumerClient!!.getNMessages(
-                        selectedTopic.value,
-                        noOfMsg.value,
-                        false,
-                        selectedTopicsDesc.value!!.partitions(),
-                        KafkaFilterOption(searchText.value,jsonSearch.value,jsonFilters)
-                    )
-                )
+                var filter :KafkaFilterOption? =null;
+                if(jsonSearch.value==true) {
+                  filter = KafkaFilterOption(searchText.value, KafkaFilterOption.JSON_FILTER, jsonFilters)
+                }
+                else
+                {
+                    filter = KafkaFilterOption(searchText.value, KafkaFilterOption.TEXT_FILTER, jsonFilters)
+                }
+                msg.addAll(consumerClient!!.getNMessages(
+                    selectedTopic.value,
+                    noOfMsg.value,
+                    false,
+                    selectedTopicsDesc.value!!.partitions(),
+                    filter))
+
                 msgErrorText.value =null
             } catch (e: Exception) {
                 msgErrorText.value = "Error Loading Meassages!"
