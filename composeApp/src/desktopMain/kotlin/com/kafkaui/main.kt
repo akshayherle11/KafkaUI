@@ -7,14 +7,16 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import kql.KQLValidator
 import org.json.JSONObject
 import util.JsonUtil
+import util.RangeUtil
 
 fun main() = application {
     val state = rememberWindowState(
         position = WindowPosition(Alignment.Center), size = DpSize(1280.dp, 768.dp)
     )
-
+//  RangeUtil.xyz()
 
     Window(
         state =state,

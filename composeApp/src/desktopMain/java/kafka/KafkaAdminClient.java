@@ -28,6 +28,8 @@ public class KafkaAdminClient {
             adminClient.close();
         }
         adminClient = AdminClient.create(properties);
+
+
         return this;
     }
 

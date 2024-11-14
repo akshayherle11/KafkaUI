@@ -31,6 +31,7 @@ import androidx.compose.ui.window.Dialog
 import com.kafkaui.ViewModel.KafkaViewModel
 import com.kafkaui.models.JsonFilter
 import kotlinx.coroutines.launch
+import kql.KQLValidator
 
 
 @Composable
@@ -38,12 +39,20 @@ fun KafkaTopicInfoView(vm: KafkaViewModel) {
     if (vm.showSearchDialog.value) {
         searchDialog(vm)
     }
+    val coroutineScope = rememberCoroutineScope()
+
 
     Box()
     {
         Column {
             Text(modifier = Modifier.padding(1.dp), fontSize = 16.sp, text = "Topic Info")
             if (vm.selectedTopicsDesc.value != null) {
+
+                var query by remember { mutableStateOf("") }
+
+                var noofmsg by remember { mutableStateOf("100") }
+
+
                 Card(modifier = Modifier.padding(top = 5.dp, bottom = 5.dp).fillMaxWidth()) {
                     Row(
                         modifier = Modifier.padding(start = 3.dp, end = 3.dp).fillMaxWidth(),
@@ -52,9 +61,15 @@ fun KafkaTopicInfoView(vm: KafkaViewModel) {
                     ) {
                         Text(fontSize = 14.sp, text = "Topic Name  : " + vm.selectedTopicsDesc.value!!.name())
                         Text(fontSize = 14.sp, text = "Partitions : " + vm.selectedTopicsDesc.value!!.partitions().size)
-                        Spacer(Modifier.weight(1f))
+                         InputTextField(value = query, onValueChange = {query=it}, modifier = Modifier.weight(1f))
+                        InputTextField(value = noofmsg, onValueChange = {noofmsg=it}, modifier = Modifier.width(100.dp))
+                     //   Spacer(Modifier.weight(1f))
                         IconButton(onClick = {
-                            vm.showSearchDialog.value = true
+                           // vm.showSearchDialog.value = true
+                          //  KQLValidator().test();
+                            coroutineScope.launch {
+                                vm.searchMessage(query,noofmsg)
+                            }
                         }) {
                             Icon(Icons.Default.Search, "Search")
                         }
@@ -98,7 +113,7 @@ fun searchDialog(vm: KafkaViewModel) {
                         modifier = Modifier.height(60.dp).width(150.dp),
                         textStyle = TextStyle(fontSize = 14.sp),
                         value = vm.noOfMsg.value.toString(),
-                        onValueChange = { vm.noOfMsg.value = it.toInt() },
+                        onValueChange = { vm.noOfMsg.value = it.toLong() },
                         label = {
                             Text("No Of Message")
                         },
@@ -136,7 +151,7 @@ fun searchDialog(vm: KafkaViewModel) {
                     TextButton(onClick = {
                         vm.showSearchDialog.value = false
                         coroutineScope.launch {
-                            vm.searchMessage()
+                          //  vm.searchMessage()
                         }
                     }
                     )

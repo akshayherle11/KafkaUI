@@ -4,13 +4,16 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kafkaui.models.JsonFilter
+import com.kafkaui.models.KafkaMessage
 import kafka.KafkaAdminClient
 import kafka.KafkaConsumerClient
 import kafka.KafkaFilterOption
+import kafka.KafkaUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kql.KQL
 import org.apache.kafka.clients.admin.TopicDescription
 import org.apache.kafka.clients.consumer.ConsumerRecord
 
@@ -32,7 +35,7 @@ class KafkaViewModel: ViewModel() {
     var loadingMsg = mutableStateOf(false);
 
 
-    var msg = mutableStateListOf<ConsumerRecord<Any,Any>?>()
+    var msg = mutableStateListOf<KafkaMessage?>()
 
     var msgErrorText = mutableStateOf<String?>("Select Topic to check the messages");
 
@@ -42,7 +45,7 @@ class KafkaViewModel: ViewModel() {
 
     var searchText = mutableStateOf("")
     var jsonSearch = mutableStateOf(false)
-    var noOfMsg = mutableStateOf(100)
+    var noOfMsg = mutableStateOf(100L)
     var jsonFilters = mutableStateListOf<JsonFilter>()
 
     var showSearchDialog =  mutableStateOf(false)
@@ -51,6 +54,8 @@ class KafkaViewModel: ViewModel() {
     var brokers = mutableStateOf("localhost:29092");
 
     var connected = mutableStateOf(false);
+
+
 
     suspend fun connect(){
         withContext(Dispatchers.IO) {
@@ -76,36 +81,24 @@ class KafkaViewModel: ViewModel() {
 
 
 
-    suspend fun searchMessage()
+    suspend fun searchMessage( query:String,noMSg:String)
     {
         loadingMsg.value  =true
         msg.clear()
         withContext(Dispatchers.IO) {
             try {
-                var filter :KafkaFilterOption? =null;
-                if(jsonSearch.value==true) {
-                  filter = KafkaFilterOption(searchText.value, KafkaFilterOption.JSON_FILTER, jsonFilters)
-                }
-                else
-                {
-                    filter = KafkaFilterOption(searchText.value, KafkaFilterOption.TEXT_FILTER, jsonFilters)
-                }
-                msg.addAll(consumerClient!!.getNMessages(
-                    selectedTopic.value,
-                    noOfMsg.value,
-                    false,
-                    selectedTopicsDesc.value!!.partitions(),
-                    filter))
+                msg.addAll(  KQL(selectedTopic.value,query).executeQuery(consumerClient, Integer.parseInt(noMSg), selectedTopicsDesc.value!!.partitions()))
 
                 msgErrorText.value =null
-            } catch (e: Exception) {
-                msgErrorText.value = "Error Loading Meassages!"
-            } finally {
 
                 if(msg.size==0)
                 {
                     msgErrorText.value = "No messages found";
                 }
+
+            } catch (e: Exception) {
+                msgErrorText.value = "Error Loading Meassages! "+e.message
+            } finally {
                   loadingMsg.value  =false
 
             }

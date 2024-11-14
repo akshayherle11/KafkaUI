@@ -76,23 +76,22 @@ fun KafkaMessageView(vm: KafkaViewModel) {
 
                             vm.msg.forEachIndexed { index, it ->
                                 row {
-                                    cell { Text(it!!.offset().toString()) }
-                                    cell { Text(it!!.partition().toString()) }
+                                    cell { Text(it?.offset.toString()) }
+                                    cell { Text("1") }
                                     cell {
                                         Box(modifier = Modifier.fillMaxWidth().clickable {
                                             selectedRow = index;
-                                            println(it!!.value().toString())
                                         })
                                         {
                                             Text(
                                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                                text = it!!.value().toString().replace("\n", "")
+                                                text = it!!.msg.replace("\n", "")
                                                 //text="Aaa"
                                             )
                                         }
                                     }
                                     cell {
-                                        Text(formatTimestamp(it!!.timestamp()))
+                                        Text(formatTimestamp(it!!.ts))
                                     }
                                 }
                             }
@@ -100,7 +99,7 @@ fun KafkaMessageView(vm: KafkaViewModel) {
                         }
 
                             if (selectedRow != null && selectedRow!! < vm.msg.size) {
-                                MessageView(vm.msg.get(selectedRow!!)?.value().toString(),Modifier.weight(1f))
+                                MessageView(vm.msg.get(selectedRow!!)!!.msg,Modifier.weight(1f))
                             } else {
                                 MessageView("Select Msg",Modifier.weight(1f))
                             }

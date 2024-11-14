@@ -32,6 +32,13 @@ kotlin {
 
 // https://mvnrepository.com/artifact/org.json/json
             implementation("org.json:json:20240303")
+            implementation("com.github.jsqlparser:jsqlparser:5.0")
+            // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+            implementation("org.apache.commons:commons-lang3:3.17.0")
+
+
+            // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
+            implementation("org.xerial:sqlite-jdbc:3.47.0.0")
 
             implementation(compose.material3)
             implementation(compose.materialIconsExtended)

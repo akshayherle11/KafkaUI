@@ -1,6 +1,18 @@
 package kafka;
 
+import static util.JsonUtil.getValueFromPath;
+
 import com.kafkaui.models.JsonFilter;
+import db.ReadOffsetDB;
+import db.TopicDataDB;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import org.apache.commons.lang3.Range;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -10,12 +22,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.json.JSONObject;
-
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-
-import static util.JsonUtil.getValueFromPath;
 
 public class KafkaConsumerClient {
 
@@ -35,6 +41,45 @@ public class KafkaConsumerClient {
 
         // create consumer
         consumer = new KafkaConsumer<>(properties);
+    }
+
+
+
+    public void readMsg(String topic, int partation, long start, long end)  {
+
+        List<TopicPartition> partitions = new ArrayList<>();
+        String eTopic = topic+"_"+partation;
+        partitions.add(new TopicPartition(topic,partation));
+        consumer.assign(partitions);
+        consumer.seek(new TopicPartition(topic, partation), start);
+
+
+        int batchSize = 50;
+
+        List<ConsumerRecord> msgs = new ArrayList<>();
+        boolean flag = true;
+        while (start < end && flag) {
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(500));
+            for (ConsumerRecord record : records) {
+                msgs.add(record);
+
+                if (start == end) {
+                    flag = false;
+                    break;
+                }
+                start++;
+            }
+            if(msgs.size()>=batchSize)
+            {
+                System.err.println("Batch Insert");
+                TopicDataDB.insertMultiple(eTopic,msgs);
+                msgs.clear();
+            }
+
+        }
+        TopicDataDB.insertMultiple(eTopic,msgs);
+        ReadOffsetDB.createTable();
+        msgs.clear();
     }
 
 
@@ -104,7 +149,7 @@ public class KafkaConsumerClient {
         }
     }
 
-    public Map<Integer, Long> getBeginningOffsets(String topic, List<TopicPartitionInfo> tpi) throws ExecutionException, InterruptedException {
+    public Map<Integer, Long> getBeginningOffsets(String topic, List<TopicPartitionInfo> tpi)  {
         List<TopicPartition> partitions = buildPartitionList(topic, tpi);
         HashMap<Integer, Long> offsets = new HashMap<>();
         Map<TopicPartition, Long> offs = consumer.beginningOffsets(partitions);
@@ -118,7 +163,7 @@ public class KafkaConsumerClient {
         }
     }
 
-    public Map<Integer, Long> getEndOffsets(String topic, List<TopicPartitionInfo> tpi) throws ExecutionException, InterruptedException {
+    public Map<Integer, Long> getEndOffsets(String topic, List<TopicPartitionInfo> tpi) {
         List<TopicPartition> partitions = buildPartitionList(topic, tpi);
         HashMap<Integer, Long> offsets = new HashMap<>();
         Map<TopicPartition, Long> offs = consumer.endOffsets(partitions);
@@ -126,6 +171,20 @@ public class KafkaConsumerClient {
         return offsets;
     }
 
+
+    public Map<Integer, Range<Long>> getOffsetRange(String topic, List<TopicPartitionInfo> tpi)
+    {
+        Map<Integer, Range<Long>> offsets = new HashMap<>();
+        Map<Integer, Long> beginningOffset = getBeginningOffsets(topic, tpi);
+        Map<Integer, Long> endOffset = getEndOffsets(topic, tpi);
+
+        for(int partition:beginningOffset.keySet())
+        {
+            Range<Long> range = Range.of(beginningOffset.get(partition),endOffset.get(partition));
+            offsets.put(partition,range);
+        }
+        return offsets;
+    }
 
     private List<TopicPartition> buildPartitionList(String topic, List<TopicPartitionInfo> partition) {
         List<TopicPartition> partitions = new ArrayList<>();
