@@ -1,11 +1,8 @@
-This is a Kotlin Multiplatform project targeting Desktop.
+Kafka Message Viewer with JSON search support build using compose multiplatform
 
-* `/composeApp` is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - `commonMain` is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    `iosMain` would be the right folder for such calls.
+* View Kafka Messages
+* Search JSON  Messages in the topics with SQL Like Condition
+* Uses SQLite to store message cache and Search Messages faster [To DO : cache delete policy]
 
-
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+Example
+![alt text](https://github.com/akshayherle11/KafkaUI/blob/master/example.png?raw=true)
